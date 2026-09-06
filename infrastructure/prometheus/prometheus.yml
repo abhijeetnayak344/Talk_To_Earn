@@ -1,0 +1,90 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'talktoearn-dev'
+    environment: 'development'
+
+# Alertmanager configuration (optional)
+# alerting:
+#   alertmanagers:
+#     - static_configs:
+#         - targets:
+#           - alertmanager:9093
+
+scrape_configs:
+  # Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # API Gateway
+  - job_name: 'api-gateway'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['api-gateway:8000']
+        labels:
+          service: 'api-gateway'
+
+  # Auth Service
+  - job_name: 'auth-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['auth-service:3001']
+        labels:
+          service: 'auth-service'
+
+  # Chat Service
+  - job_name: 'chat-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['chat-service:3002']
+        labels:
+          service: 'chat-service'
+
+  # User Service
+  - job_name: 'user-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['user-service:3003']
+        labels:
+          service: 'user-service'
+
+  # Reward Service
+  - job_name: 'reward-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['reward-service:3004']
+        labels:
+          service: 'reward-service'
+
+  # Notification Service
+  - job_name: 'notification-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['notification-service:3005']
+        labels:
+          service: 'notification-service'
+
+  # Engagement Service
+  - job_name: 'engagement-service'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['engagement-service:8001']
+        labels:
+          service: 'engagement-service'
+
+  # PostgreSQL Exporter (optional, requires postgres_exporter)
+  # - job_name: 'postgres'
+  #   static_configs:
+  #     - targets: ['postgres-exporter:9187']
+
+  # Redis Exporter (optional, requires redis_exporter)
+  # - job_name: 'redis'
+  #   static_configs:
+  #     - targets: ['redis-exporter:9121']
+
+  # Kafka Exporter (optional, requires kafka_exporter)
+  # - job_name: 'kafka'
+  #   static_configs:
+  #     - targets: ['kafka-exporter:9308']

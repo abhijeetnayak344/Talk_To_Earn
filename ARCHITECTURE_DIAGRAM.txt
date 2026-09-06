@@ -1,0 +1,480 @@
+================================================================================
+                    TALK TO EARN - SYSTEM ARCHITECTURE
+================================================================================
+
+                            PRODUCTION DEPLOYMENT
+================================================================================
+
+                              ┌──────────────┐
+                              │ CloudFront   │ (CDN - Static Assets)
+                              │   (CDN)      │
+                              └──────┬───────┘
+                                     │
+                              ┌──────▼───────┐
+                              │    ALB       │ (Load Balancer)
+                              │ (AWS ELB)    │
+                              └──────┬───────┘
+                                     │
+                        ┌────────────┼────────────┐
+                        │                         │
+                   ┌────▼────┐              ┌────▼────┐
+                   │  Web    │              │ Mobile  │
+                   │  App    │              │  App    │
+                   │ (React) │              │ (RN)    │
+                   └─────────┘              └─────────┘
+
+
+================================================================================
+                         DEVELOPMENT ENVIRONMENT
+================================================================================
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT LAYER                                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌──────────────┐         ┌──────────────┐         ┌──────────────┐       │
+│  │   Web App    │         │  Mobile App  │         │   Admin      │       │
+│  │  (Next.js)   │         │ (React Nat.) │         │   Panel      │       │
+│  └──────┬───────┘         └──────┬───────┘         └──────┬───────┘       │
+│         │                        │                         │                │
+│         │         HTTPS / WSS    │                         │                │
+│         └────────────────────────┼─────────────────────────┘                │
+│                                  │                                          │
+└──────────────────────────────────┼──────────────────────────────────────────┘
+                                   │
+                                   │
+┌──────────────────────────────────▼──────────────────────────────────────────┐
+│                           API GATEWAY LAYER                                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│                    ┌──────────────────────────────┐                         │
+│                    │      API GATEWAY             │                         │
+│                    │   (Node.js + Express)        │                         │
+│                    │                              │                         │
+│                    │  • Authentication Verify     │                         │
+│                    │  • Rate Limiting             │                         │
+│                    │  • Request Routing           │                         │
+│                    │  • Response Aggregation      │                         │
+│                    │  • SSL Termination           │                         │
+│                    │                              │                         │
+│                    │  Port: 8000                  │                         │
+│                    └──────────┬───────────────────┘                         │
+│                               │                                              │
+└───────────────────────────────┼──────────────────────────────────────────────┘
+                                │
+         ┌──────────────────────┼──────────────────────┐
+         │                      │                      │
+         │                      │                      │
+┌────────▼────────┐   ┌─────────▼────────┐   ┌───────▼────────┐
+│                 │   │                  │   │                │
+│  AUTH SERVICE   │   │  CHAT SERVICE    │   │  USER SERVICE  │
+│  (Node.js)      │   │  (Node.js)       │   │  (Node.js)     │
+│                 │   │                  │   │                │
+│  • Registration │   │  • WebSocket     │   │  • Profiles    │
+│  • Login        │   │  • Messaging     │   │  • Settings    │
+│  • JWT Tokens   │   │  • Groups        │   │  • Privacy     │
+│  • Sessions     │   │  • Reactions     │   │  • Blocking    │
+│  • Verification │   │  • Attachments   │   │  • Reporting   │
+│                 │   │                  │   │                │
+│  Port: 3001     │   │  Port: 3002      │   │  Port: 3003    │
+└────────┬────────┘   └─────────┬────────┘   └───────┬────────┘
+         │                      │                     │
+         │                      │                     │
+         │         ┌────────────┼─────────────┐       │
+         │         │            │             │       │
+┌────────▼─────────▼────┐  ┌────▼──────────┐ │  ┌────▼────────────┐
+│                       │  │               │ │  │                 │
+│  ENGAGEMENT SERVICE   │  │  REWARD       │ │  │  NOTIFICATION   │
+│  (Python + FastAPI)   │  │  SERVICE      │ │  │  SERVICE        │
+│                       │  │  (Node.js)    │ │  │  (Node.js)      │
+│  ⭐ CORE ALGORITHM ⭐  │  │               │ │  │                 │
+│                       │  │  • Points     │ │  │  • Push (FCM)   │
+│  • Message Analysis   │  │  • Wallet     │ │  │  • Email        │
+│  • Duplicate Detection│  │  • Ledger     │ │  │  • SMS          │
+│  • Spam Detection     │  │  • Rewards    │ │  │  • In-app       │
+│  • Bot Detection      │  │  • Redemption │ │  │                 │
+│  • Engagement Scoring │  │  • Vouchers   │ │  │                 │
+│  • NLP & Embeddings   │  │               │ │  │                 │
+│                       │  │               │ │  │                 │
+│  Port: 8001           │  │  Port: 3004   │ │  │  Port: 3005     │
+└───────┬───────────────┘  └───────┬───────┘ │  └─────────────────┘
+        │                          │         │
+        │                          │         │
+┌───────┴──────────────────────────┴─────────┴──────────────────────────────┐
+│                        EVENT STREAMING LAYER                               │
+├────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│                          ┌──────────────────┐                              │
+│                          │   Apache Kafka   │                              │
+│                          │                  │                              │
+│   Topics:                │  • message.sent           • points.awarded      │
+│                          │  • engagement.calculated  • notification.send   │
+│                          │  • call.completed         • fraud.detected      │
+│                          │                  │                              │
+│                          │  Port: 9092      │                              │
+│                          └────────┬─────────┘                              │
+│                                   │                                         │
+│              Event-Driven Asynchronous Communication                        │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          DATA PERSISTENCE LAYER                              │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                     POSTGRESQL (Primary DB)                         │   │
+│  │                                                                     │   │
+│  │  📊 40+ Tables:                                                     │   │
+│  │  • users, auth_tokens, sessions                                    │   │
+│  │  • conversations, messages (partitioned), attachments              │   │
+│  │  • groups, couples, calls                                          │   │
+│  │  • statuses, point_accounts, point_transactions                    │   │
+│  │  • rewards, redemptions, vouchers                                  │   │
+│  │  • engagement_events, fraud_events                                 │   │
+│  │                                                                     │   │
+│  │  Port: 5432                                                        │   │
+│  └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                              │
+│  ┌──────────────────────┐         ┌────────────────────────────────┐       │
+│  │   REDIS (Cache)      │         │   MinIO (S3-Compatible)        │       │
+│  │                      │         │                                │       │
+│  │  • Online users      │         │  • Profile photos              │       │
+│  │  • Sessions          │         │  • Chat attachments            │       │
+│  │  • Typing indicators │         │  • Status media                │       │
+│  │  • Rate limits       │         │  • Reward images               │       │
+│  │  • Hot data cache    │         │                                │       │
+│  │                      │         │                                │       │
+│  │  Port: 6379          │         │  Port: 9000 (API)              │       │
+│  └──────────────────────┘         │  Port: 9001 (Console)          │       │
+│                                   └────────────────────────────────┘       │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                      MONITORING & OBSERVABILITY LAYER                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                               │
+│  ┌──────────────────┐         ┌──────────────────┐                          │
+│  │   PROMETHEUS     │────────▶│    GRAFANA       │                          │
+│  │                  │         │                  │                          │
+│  │  • Metrics       │         │  • Dashboards    │                          │
+│  │  • Scraping      │         │  • Visualization │                          │
+│  │  • Time-series   │         │  • Alerts        │                          │
+│  │                  │         │                  │                          │
+│  │  Port: 9090      │         │  Port: 3000      │                          │
+│  └──────────────────┘         └──────────────────┘                          │
+│                                                                               │
+│  Metrics Collected:                                                          │
+│  • HTTP request rate, latency, errors                                        │
+│  • WebSocket connections                                                     │
+│  • Database query performance                                                │
+│  • Cache hit/miss rates                                                      │
+│  • Kafka consumer lag                                                        │
+│  • Engagement scores distribution                                            │
+│  • Points awarded per hour                                                   │
+│  • Fraud detection alerts                                                    │
+│                                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                          DATA FLOW EXAMPLES
+================================================================================
+
+1. USER SENDS MESSAGE
+──────────────────────────────────────────────────────────────────────────────
+
+  Client                 API Gateway           Chat Service
+    │                        │                       │
+    │──[WebSocket: msg]─────▶│                       │
+    │                        │──[validate JWT]──────▶│
+    │                        │                       │
+    │                        │                       │──[save to DB]──▶ PostgreSQL
+    │                        │                       │
+    │                        │                       │──[publish]─────▶ Redis
+    │                        │                       │
+    │◀─[ack]─────────────────│◀─────────────────────│
+    │                        │                       │
+    │                        │                       │──[emit event]──▶ Kafka
+    │                        │                       │                    │
+    │                        │                       │                    │
+    │                        │                       │         ┌──────────▼─────────┐
+    │                        │                       │         │ Engagement Service │
+    │                        │                       │         │  • Analyze message │
+    │                        │                       │         │  • Check duplicates│
+    │                        │                       │         │  • Calculate score │
+    │                        │                       │         │  • Detect spam     │
+    │                        │                       │         └──────────┬─────────┘
+    │                        │                       │                    │
+    │                        │                       │         ┌──────────▼─────────┐
+    │                        │                       │         │  Reward Service    │
+    │                        │                       │         │  • Award points    │
+    │                        │                       │         │  • Update balance  │
+    │                        │                       │         └──────────┬─────────┘
+    │                        │                       │                    │
+    │                        │                       │         ┌──────────▼─────────┐
+    │◀─[points earned]───────│◀──────────────────────│◀────────│ Notification Svc  │
+    │                        │                       │         └────────────────────┘
+
+
+2. USER REDEEMS REWARD
+──────────────────────────────────────────────────────────────────────────────
+
+  Client              API Gateway         Reward Service          PostgreSQL
+    │                     │                      │                      │
+    │──[POST /redeem]────▶│                      │                      │
+    │  + idempotency_key  │                      │                      │
+    │                     │──[validate JWT]─────▶│                      │
+    │                     │                      │                      │
+    │                     │                      │──[BEGIN TX]─────────▶│
+    │                     │                      │                      │
+    │                     │                      │──[lock account]─────▶│
+    │                     │                      │                      │
+    │                     │                      │──[check balance]────▶│
+    │                     │                      │◀────────────────────│
+    │                     │                      │                      │
+    │                     │                      │──[deduct points]────▶│
+    │                     │                      │                      │
+    │                     │                      │──[create redemption]▶│
+    │                     │                      │                      │
+    │                     │                      │──[generate voucher]─▶│
+    │                     │                      │                      │
+    │                     │                      │──[COMMIT TX]────────▶│
+    │                     │                      │                      │
+    │◀─[voucher code]─────│◀────────────────────│                      │
+    │                     │                      │                      │
+    │                     │                      │──[emit event]───▶ Kafka
+    │                     │                      │
+    │◀─[push notification]│◀─────────────────────────────────Notification Service
+
+
+================================================================================
+                      ENGAGEMENT ENGINE FLOW
+================================================================================
+
+    Message Event from Kafka
+            │
+            ▼
+    ┌───────────────────────┐
+    │   Normalization       │
+    │   • Lowercase         │
+    │   • Remove punct.     │
+    │   • Common patterns   │
+    └───────┬───────────────┘
+            │
+            ▼
+    ┌───────────────────────┐
+    │  Duplicate Check      │
+    │   • Exact match       │
+    │   • Levenshtein       │
+    │   • Semantic (embed)  │
+    └───────┬───────────────┘
+            │
+            ├──[duplicate]──▶ 0 points, STOP
+            │
+            ▼
+    ┌───────────────────────┐
+    │  Context Analysis     │
+    │   Load recent 20 msgs │
+    └───────┬───────────────┘
+            │
+            ▼
+    ┌────────────────────────────────────────┐
+    │   Calculate 6 Engagement Signals       │
+    ├────────────────────────────────────────┤
+    │  1. Two-way participation   (25%)      │
+    │  2. Response time           (15%)      │
+    │  3. Conversation continuity (20%)      │
+    │  4. Message length          (15%)      │
+    │  5. Interaction variety     (15%)      │
+    │  6. Message uniqueness      (10%)      │
+    └───────┬────────────────────────────────┘
+            │
+            ▼
+    ┌───────────────────────┐
+    │  Weighted Average     │
+    │  Engagement Score     │
+    │  (0.0 - 1.0)          │
+    └───────┬───────────────┘
+            │
+            ▼
+    ┌───────────────────────┐
+    │  Spam Detection       │
+    │   • Fast responses    │
+    │   • Low variety       │
+    │   • Monologue         │
+    └───────┬───────────────┘
+            │
+            ├──[spam]──▶ 0 points, STOP
+            │
+            ▼
+    ┌───────────────────────┐
+    │  Point Calculation    │
+    │   0.7+ → 3 points     │
+    │   0.5+ → 2 points     │
+    │   0.3+ → 1 point      │
+    │   <0.3 → 0 points     │
+    └───────┬───────────────┘
+            │
+            ▼
+    ┌───────────────────────┐
+    │  Daily Cap Check      │
+    │   • User reputation   │
+    │   • Today's total     │
+    └───────┬───────────────┘
+            │
+            ▼
+    ┌───────────────────────┐
+    │  Emit to Kafka        │
+    │  'engagement.calc'    │
+    └───────┬───────────────┘
+            │
+            ▼
+      Reward Service
+      Awards Points
+
+
+================================================================================
+                        SCALABILITY PATTERNS
+================================================================================
+
+Horizontal Scaling:
+┌──────────────────────────────────────────────────────────────────────┐
+│                        Load Balancer                                 │
+└──────────────────────┬───────────────────────────────────────────────┘
+                       │
+        ┌──────────────┼──────────────┬──────────────┐
+        │              │              │              │
+   ┌────▼────┐    ┌────▼────┐   ┌────▼────┐   ┌────▼────┐
+   │Service 1│    │Service 2│   │Service 3│   │Service N│
+   └────┬────┘    └────┬────┘   └────┬────┘   └────┬────┘
+        │              │              │              │
+        └──────────────┴──────────────┴──────────────┘
+                       │
+              ┌────────┼────────┐
+              │                 │
+         ┌────▼────┐      ┌────▼─────┐
+         │  Redis  │      │PostgreSQL│
+         │Cluster  │      │ Replicas │
+         └─────────┘      └──────────┘
+
+
+Caching Strategy:
+┌─────────────────────────────────────────────────────────────┐
+│  Request → Check Redis → [HIT] → Return cached data         │
+│                    ↓                                         │
+│                  [MISS]                                      │
+│                    ↓                                         │
+│            Query PostgreSQL                                  │
+│                    ↓                                         │
+│            Cache in Redis (TTL: 5min)                        │
+│                    ↓                                         │
+│            Return data                                       │
+└─────────────────────────────────────────────────────────────┘
+
+
+Database Partitioning (Messages):
+┌──────────────────────────────────────────────────────────────┐
+│  messages (parent table)                                     │
+│    ├── messages_2024_01 (Jan 2024)                          │
+│    ├── messages_2024_02 (Feb 2024)                          │
+│    ├── messages_2024_03 (Mar 2024)                          │
+│    └── messages_2024_XX (auto-created monthly)              │
+│                                                              │
+│  Queries automatically route to correct partition            │
+│  Old partitions can be archived to S3                        │
+└──────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                         DEPLOYMENT ARCHITECTURE
+================================================================================
+
+AWS Production Setup:
+┌────────────────────────────────────────────────────────────────────────┐
+│                            AWS Cloud                                   │
+│                                                                        │
+│  ┌──────────────┐                                                     │
+│  │ CloudFront   │──────▶ S3 (Static Assets)                          │
+│  └──────┬───────┘                                                     │
+│         │                                                              │
+│  ┌──────▼──────────────────────────────────────────────────────────┐ │
+│  │                        VPC                                        │ │
+│  │  ┌────────────────────────────────────────────────────────┐     │ │
+│  │  │              Public Subnets                             │     │ │
+│  │  │  ┌─────────────┐         ┌─────────────┐              │     │ │
+│  │  │  │     ALB     │         │   Bastion   │              │     │ │
+│  │  │  │   (8000)    │         │    Host     │              │     │ │
+│  │  │  └──────┬──────┘         └─────────────┘              │     │ │
+│  │  └─────────┼───────────────────────────────────────────────┘     │ │
+│  │            │                                                      │ │
+│  │  ┌─────────▼─────────────────────────────────────────────────┐  │ │
+│  │  │              Private Subnets                              │  │ │
+│  │  │                                                           │  │ │
+│  │  │  ┌─────────────────────────────────────────────────┐    │  │ │
+│  │  │  │        ECS Cluster (Fargate)                    │    │  │ │
+│  │  │  │                                                 │    │  │ │
+│  │  │  │  [Auth] [Chat] [User] [Engagement]             │    │  │ │
+│  │  │  │  [Reward] [Notification] [API GW]              │    │  │ │
+│  │  │  │                                                 │    │  │ │
+│  │  │  │  • Auto-scaling                                │    │  │ │
+│  │  │  │  • Health checks                               │    │  │ │
+│  │  │  │  • Rolling updates                             │    │  │ │
+│  │  │  └─────────────────────────────────────────────────┘    │  │ │
+│  │  │                                                           │  │ │
+│  │  │  ┌───────────┐  ┌───────────┐  ┌─────────────┐         │  │ │
+│  │  │  │    RDS    │  │ElastiCache│  │     MSK     │         │  │ │
+│  │  │  │(Postgres) │  │  (Redis)  │  │   (Kafka)   │         │  │ │
+│  │  │  │           │  │           │  │             │         │  │ │
+│  │  │  │• Multi-AZ │  │• Cluster  │  │• 3 brokers  │         │  │ │
+│  │  │  │• Replicas │  │• Failover │  │• Multi-AZ   │         │  │ │
+│  │  │  └───────────┘  └───────────┘  └─────────────┘         │  │ │
+│  │  └───────────────────────────────────────────────────────────┘  │ │
+│  └──────────────────────────────────────────────────────────────────┘ │
+│                                                                        │
+│  External Services:                                                   │
+│  • S3 (Media Storage)                                                 │
+│  • CloudWatch (Monitoring)                                            │
+│  • Secrets Manager (Secrets)                                          │
+│  • Route53 (DNS)                                                      │
+└────────────────────────────────────────────────────────────────────────┘
+
+
+================================================================================
+                           KEY METRICS
+================================================================================
+
+Performance Targets:
+  • API Response Time (p95):     < 100ms
+  • WebSocket Latency:           < 50ms
+  • Message Delivery Time:       < 200ms
+  • Database Query Time (p95):   < 50ms
+  • Cache Hit Rate:              > 80%
+
+Scalability Targets:
+  • Phase 1:   10,000 users
+  • Phase 2:  100,000 users
+  • Phase 3: 1,000,000 users
+  • Phase 4: 10,000,000 users
+
+Availability:
+  • Uptime Target:               99.9% (8.76 hours downtime/year)
+  • RPO (Recovery Point):        1 hour
+  • RTO (Recovery Time):         4 hours
+
+================================================================================
+                    END OF ARCHITECTURE DIAGRAM
+================================================================================
+
+For detailed documentation, see:
+  • docs/ARCHITECTURE.md        - Comprehensive system design
+  • docs/DATABASE_SCHEMA.md     - Complete database schema
+  • docs/API_SPECIFICATIONS.md  - All API endpoints
+  • docs/ENGAGEMENT_ENGINE.md   - Engagement algorithm details
+  • QUICKSTART.md               - Get started in 10 minutes
+  • PROJECT_SUMMARY.md          - Project overview
+
+Questions? Issues? See CONTRIBUTING.md or open a GitHub issue.
