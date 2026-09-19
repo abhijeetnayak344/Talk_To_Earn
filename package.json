@@ -1,0 +1,32 @@
+{
+  "name": "talk-to-earn",
+  "version": "1.0.0",
+  "description": "Talk to Earn - Real-time communication + rewards platform (Vercel deployment)",
+  "main": "api/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "migrate": "node scripts/migrate.js"
+  },
+  "keywords": [
+    "chat",
+    "rewards",
+    "engagement",
+    "microservices",
+    "serverless"
+  ],
+  "author": "Talk to Earn Team",
+  "license": "MIT",
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "vercel": "^33.0.1"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}

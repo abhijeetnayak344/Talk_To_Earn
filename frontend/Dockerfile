@@ -6,13 +6,16 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install --production
+RUN npm install
 
 # Copy source code
 COPY . .
 
+# Build the application
+RUN npm run build
+
 # Expose port
-EXPOSE 3001
+EXPOSE 3000
 
 # Start application
-CMD ["npm", "run", "dev"]
+CMD ["npm", "start"]

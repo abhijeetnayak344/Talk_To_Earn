@@ -1,0 +1,37 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/auth/(.*)",
+      "dest": "/api/auth/index.js"
+    },
+    {
+      "src": "/api/users/(.*)",
+      "dest": "/api/users/index.js"
+    },
+    {
+      "src": "/api/messages/(.*)",
+      "dest": "/api/messages/index.js"
+    },
+    {
+      "src": "/api/rewards/(.*)",
+      "dest": "/api/rewards/index.js"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.js"
+    }
+  ],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "REDIS_URL": "@redis_url",
+    "JWT_SECRET": "@jwt_secret",
+    "JWT_REFRESH_SECRET": "@jwt_refresh_secret"
+  }
+}

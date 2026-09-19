@@ -47,7 +47,7 @@ Write-Host "Starting PostgreSQL, Redis, Kafka, MinIO..." -ForegroundColor Yellow
 docker-compose up -d postgres redis zookeeper kafka minio
 
 Write-Host ""
-Write-Host "Waiting for services to be ready (30 seconds)..." -ForegroundColor Yellow
+Write-Host "Waiting for services to be ready - 30 seconds..." -ForegroundColor Yellow
 Start-Sleep -Seconds 30
 
 Write-Host ""
@@ -85,7 +85,7 @@ Write-Host "Starting all microservices..." -ForegroundColor Yellow
 docker-compose up -d
 
 Write-Host ""
-Write-Host "Waiting for services to start (30 seconds)..." -ForegroundColor Yellow
+Write-Host "Waiting for services to start - 30 seconds..." -ForegroundColor Yellow
 Start-Sleep -Seconds 30
 
 Write-Host ""

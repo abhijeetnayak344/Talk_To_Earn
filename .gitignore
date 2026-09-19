@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.vercel
 
 # Dependencies
 node_modules/
@@ -41,9 +42,9 @@ yarn-error.log*
 # Testing
 .coverage
 .pytest_cache/
-coverage/
 .nyc_output
 htmlcov/
+coverage/
 
 # Docker
 docker-compose.override.yml
@@ -66,3 +67,6 @@ Thumbs.db
 *.tmp
 *.temp
 .cache/
+
+# Vercel
+.vercel
